@@ -1,19 +1,35 @@
-const express = require("express");
-const cors = require("cors");
-const path = require("path");
-const db = require("./db");
-const apiRoutes = require("./routes/api");
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
-const PORT = 3001;
 
-app.use(cors());
-app.use(express.json());
-app.use("/api", apiRoutes);
 
-// Servir archivos de audio
-app.use("/audio", express.static(path.join(__dirname, "audio")));
+app.use('/music', express.static(path.join(__dirname, 'music')));
 
-app.listen(PORT, () => {
-  console.log(`🎧 Servidor corriendo en http://localhost:${PORT}`);
+
+app.get('/api/music', (req, res) => {
+    const musicPath = path.join(__dirname, 'music');
+    
+    fs.readdir(musicPath, (err, files) => {
+        if (err) {
+            console.error('Error al leer archivos:', err);
+            return res.status(500).json({ error: 'Error del servidor' });
+        }
+        
+        const musicFiles = files.filter(file => 
+            file.endsWith('.mp3') || 
+            file.endsWith('.wav') ||
+            file.endsWith('.ogg')
+        );
+        
+        const musicList = musicFiles.map(file => ({
+            id: file,
+            title: file.replace(/\.[^/.]+$/, ""), 
+            url: `/music/${encodeURIComponent(file)}`
+        }));
+        
+        res.json(musicList);
+    });
 });
+
